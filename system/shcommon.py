@@ -10,14 +10,20 @@ import threading
 import ctypes
 from itertools import chain
 
-import six
+from stash.lib.libslog import slog
+
+PY3 = sys.version_info.major == 3
+
+_pyfile_ = __file__.split("/")[-1]
+slog(f'_pyfile_: {_pyfile_}')
 
 IN_PYTHONISTA = sys.executable.find('Pythonista') >= 0
 
 if IN_PYTHONISTA:
     import plistlib
 
-    _properties = plistlib.readPlist(os.path.join(os.path.dirname(sys.executable), 'Info.plist'))
+    _properties = plistlib.readPlist(
+        os.path.join(os.path.dirname(sys.executable), 'Info.plist'))
     PYTHONISTA_VERSION = _properties['CFBundleShortVersionString']
     PYTHONISTA_VERSION_LONG = _properties['CFBundleVersion']
 
@@ -25,17 +31,20 @@ if IN_PYTHONISTA:
         python_capi = ctypes.pythonapi
     else:
         # The default pythonapi always points to Python 3 in Pythonista 3
-        if six.PY3:
+        if PY3:
             python_capi = ctypes.pythonapi
         else:
             # We need to load the Python 2 API manually
             try:
-                python_capi = ctypes.PyDLL(os.path.join(os.path.dirname(sys.executable), 'Frameworks/Py2Kit.framework/Py2Kit'))
+                python_capi = ctypes.PyDLL(
+                    os.path.join(
+                        os.path.dirname(sys.executable),
+                        'Frameworks/Py2Kit.framework/Py2Kit'))
             except OSError:
                 python_capi = ctypes.PyDLL(
-                    os.path.join(os.path.dirname(sys.executable),
-                                 'Frameworks/PythonistaKit.framework/PythonistaKit')
-                )
+                    os.path.join(
+                        os.path.dirname(sys.executable),
+                        'Frameworks/PythonistaKit.framework/PythonistaKit'))
 
 else:
     PYTHONISTA_VERSION = '0.0'
@@ -50,14 +59,17 @@ M_64 = platform_string.find('64bit') != -1
 
 CTRL_KEY_FLAG = (1 << 18)  # Control key for keyCommands
 CMD_KEY_FLAG = (1 << 20)  # Command key
-K_CC, K_CD, K_HUP, K_HDN, K_LEFT, K_RIGHT, K_CU, K_TAB, K_HIST, K_CZ, K_KB = range(11)
+K_CC, K_CD, K_HUP, K_HDN, K_LEFT, K_RIGHT, K_CU, K_TAB, K_HIST, K_CZ, K_KB = range(
+    11)
 
-_STASH_ROOT = os.path.realpath(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+_STASH_ROOT = os.path.realpath(
+    os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 _STASH_CONFIG_FILES = ('.stash_config', 'stash.cfg')
 _STASH_HISTORY_FILE = '.stash_history'
 
 # directory for stash extensions
-_STASH_EXTENSION_PATH = os.path.abspath(os.path.join(os.getenv("HOME"), "Documents", "stash_extensions"), )
+_STASH_EXTENSION_PATH = os.path.abspath(
+    os.path.join(os.getenv("HOME"), "Documents", "stash_extensions"), )
 # directory for stash bin extensions
 _STASH_EXTENSION_BIN_PATH = os.path.join(_STASH_EXTENSION_PATH, "bin")
 # directory for stash man extensions
@@ -74,9 +86,6 @@ _EXTERNAL_DIRS = [
     _STASH_EXTENSION_FSI_PATH,
     _STASH_EXTENSION_PATCH_PATH,
 ]
-
-# Python 3 or not Python 3
-PY3 = six.PY3
 
 # Save the true IOs
 if IN_PYTHONISTA:
@@ -196,7 +205,8 @@ def sh_background(name=None):
     def wrap(func):
         @functools.wraps(func)
         def wrapped_func(*args, **kwargs):
-            t = threading.Thread(name=name, target=func, args=args, kwargs=kwargs)
+            t = threading.Thread(
+                name=name, target=func, args=args, kwargs=kwargs)
             t.start()
             return t
 
@@ -215,7 +225,8 @@ class ShIsDirectory(Exception):
 
 class ShNotExecutable(Exception):
     def __init__(self, filename):
-        super(Exception, self).__init__('{}: not executable\n'.format(filename))
+        super(Exception,
+              self).__init__('{}: not executable\n'.format(filename))
 
 
 class ShSingleExpansionRequired(Exception):

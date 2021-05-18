@@ -8,11 +8,15 @@ Otherwise, it should be dispatched to regular sys io.
 import sys
 import threading
 
-from .shcommon import _SYS_STDIN, _SYS_STDOUT, _SYS_STDERR
-from .shthreads import ShBaseThread
+from stash.lib.libslog import slog
+_pyfile_ = __file__.split("/")[-1]
+slog(f'_pyfile_: {_pyfile_}')
+
+from stash.system.shcommon import _SYS_STDIN, _SYS_STDOUT, _SYS_STDERR
+from stash.system.shthreads import ShBaseThread
 
 
-class ShStdinWrapper(object):
+class ShStdinWrapper:
     def __getattribute__(self, item):
         thread = threading.currentThread()
 

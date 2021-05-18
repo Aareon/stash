@@ -8,10 +8,15 @@ for accepting outputs from running scripts.
 import logging
 import re
 
-import six
+from stash.lib.libslog import slog
+_pyfile_ = __file__.split("/")[-1]
+slog(f'pyfile: {_pyfile_}')
 
 # noinspection PyPep8Naming
-from .shcommon import Control as ctrl, Escape as esc, PY3
+from stash.system.shcommon import (
+    Control as ctrl,
+    Escape as esc,
+    PY3,)
 
 
 class ShMiniBuffer(object):

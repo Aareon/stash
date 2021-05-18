@@ -5,6 +5,10 @@ such as type, touch, swipe, key press.
 """
 from contextlib import contextmanager
 
+from stash.lib.libslog import slog
+_pyfile_ = __file__.split("/")[-1]
+slog(f'pyfile: {_pyfile_}')
+
 
 class ShNullResponder(object):
     def handle(self, *args, **kwargs):
@@ -50,7 +54,8 @@ class ShUserActionProxy(object):
 
             @staticmethod
             def textview_should_change(sender, rng, replacement):
-                return self.tv_responder.textview_should_change(sender, rng, replacement)
+                return self.tv_responder.textview_should_change(
+                    sender, rng, replacement)
 
             @staticmethod
             def textview_did_change(sender):
@@ -99,7 +104,11 @@ class ShUserActionProxy(object):
         self._kc_responder = value
 
     @contextmanager
-    def config(self, vk_responder=False, tv_responder=False, sv_responder=False, kc_responder=False):
+    def config(self,
+               vk_responder=False,
+               tv_responder=False,
+               sv_responder=False,
+               kc_responder=False):
 
         try:
             self._vk_responder = NULL_RESPONDER if vk_responder is False else vk_responder

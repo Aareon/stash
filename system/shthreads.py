@@ -9,7 +9,11 @@ import weakref
 import ctypes
 from collections import OrderedDict
 
-from .shcommon import M_64, _SYS_STDOUT, python_capi
+from stash.lib.libslog import slog
+_pyfile_ = __file__.split("/")[-1]
+slog(f'pyfile: {_pyfile_}')
+
+from stash.system.shcommon import M_64, _SYS_STDOUT, python_capi
 
 _STATE_STR_TEMPLATE = """enclosed_cwd: {}
 aliases: {}
@@ -25,16 +29,14 @@ class ShState(object):
     """ State of the current worker thread
     """
 
-    def __init__(
-            self,
-            aliases=None,
-            environ=None,
-            enclosed_cwd=None,
-            sys_stdin=None,
-            sys_stdout=None,
-            sys_stderr=None,
-            sys_path=None
-    ):
+    def __init__(self,
+                 aliases=None,
+                 environ=None,
+                 enclosed_cwd=None,
+                 sys_stdin=None,
+                 sys_stdout=None,
+                 sys_stderr=None,
+                 sys_path=None):
 
         self.aliases = aliases or {}
         self.environ = environ or {}
@@ -53,14 +55,8 @@ class ShState(object):
 
     def __str__(self):
         s = _STATE_STR_TEMPLATE.format(
-            self.enclosed_cwd,
-            self.aliases,
-            self.sys_stdin,
-            self.sys_stdout,
-            self.sys_stderr,
-            self.temporary_environ,
-            self.environ
-        )
+            self.enclosed_cwd, self.aliases, self.sys_stdin, self.sys_stdout,
+            self.sys_stderr, self.temporary_environ, self.environ)
         return s
 
     @property
@@ -136,8 +132,7 @@ class ShState(object):
             sys_stdin=parent_state.sys_stdin__,
             sys_stdout=parent_state.sys_stdout__,
             sys_stderr=parent_state.sys_stderr__,
-            sys_path=parent_state.sys_path[:]
-        )
+            sys_path=parent_state.sys_path[:])
 
 
 class ShWorkerRegistry(object):
@@ -209,8 +204,16 @@ class ShBaseThread(threading.Thread):
     STARTED = 2
     STOPPED = 3
 
-    def __init__(self, registry, parent, command, target=None, is_background=False, environ={}, cwd=None):
-        super(ShBaseThread, self).__init__(group=None, target=target, name='_shthread', args=(), kwargs=None)
+    def __init__(self,
+                 registry,
+                 parent,
+                 command,
+                 target=None,
+                 is_background=False,
+                 environ={},
+                 cwd=None):
+        super(ShBaseThread, self).__init__(
+            group=None, target=target, name='_shthread', args=(), kwargs=None)
 
         # Registry management
         self.registry = weakref.proxy(registry)
@@ -240,15 +243,12 @@ class ShBaseThread(threading.Thread):
 
     def __repr__(self):
         command_str = str(self.command)
-        return '[{}] {} {}'.format(
-            self.job_id,
-            {
-                self.CREATED: 'Created',
-                self.STARTED: 'Started',
-                self.STOPPED: 'Stopped'
-            }[self.status()],
-            command_str[:20] + ('...' if len(command_str) > 20 else '')
-        )
+        return '[{}] {} {}'.format(self.job_id, {
+            self.CREATED: 'Created',
+            self.STARTED: 'Started',
+            self.STOPPED: 'Stopped'
+        }[self.status()], command_str[:20] +
+                                   ('...' if len(command_str) > 20 else ''))
 
     def status(self):
         """
@@ -282,7 +282,8 @@ class ShBaseThread(threading.Thread):
         Whether or not the thread is directly under the runtime, aka top level.
         A top level thread has the runtime as its parent
         """
-        return not isinstance(self.parent, ShBaseThread) and not self.is_background
+        return not isinstance(self.parent,
+                              ShBaseThread) and not self.is_background
 
     def cleanup(self):
         """
@@ -310,17 +311,22 @@ class ShBaseThread(threading.Thread):
 class ShTracedThread(ShBaseThread):
     """ Killable thread implementation with trace """
 
-    def __init__(self, registry, parent, command, target=None, is_background=False, environ={}, cwd=None):
-        super(ShTracedThread,
-              self).__init__(
-                  registry,
-                  parent,
-                  command,
-                  target=target,
-                  is_background=is_background,
-                  environ=environ,
-                  cwd=cwd
-              )
+    def __init__(self,
+                 registry,
+                 parent,
+                 command,
+                 target=None,
+                 is_background=False,
+                 environ={},
+                 cwd=None):
+        super(ShTracedThread, self).__init__(
+            registry,
+            parent,
+            command,
+            target=target,
+            is_background=is_background,
+            environ=environ,
+            cwd=cwd)
 
     def start(self):
         """Start the thread."""
@@ -357,21 +363,28 @@ class ShCtypesThread(ShBaseThread):
     another thread (with ctypes).
     """
 
-    def __init__(self, registry, parent, command, target=None, is_background=False, environ={}, cwd=None):
-        super(ShCtypesThread,
-              self).__init__(
-                  registry,
-                  parent,
-                  command,
-                  target=target,
-                  is_background=is_background,
-                  environ=environ,
-                  cwd=cwd
-              )
+    def __init__(self,
+                 registry,
+                 parent,
+                 command,
+                 target=None,
+                 is_background=False,
+                 environ={},
+                 cwd=None):
+        super(ShCtypesThread, self).__init__(
+            registry,
+            parent,
+            command,
+            target=target,
+            is_background=is_background,
+            environ=environ,
+            cwd=cwd)
 
     def _async_raise(self):
         tid = self.ident
-        res = python_capi.PyThreadState_SetAsyncExc(ctypes.c_long(tid) if M_64 else tid, ctypes.py_object(KeyboardInterrupt))
+        res = python_capi.PyThreadState_SetAsyncExc(
+            ctypes.c_long(tid) if M_64 else tid,
+            ctypes.py_object(KeyboardInterrupt))
         if res == 0:
             raise ValueError("invalid thread id")
         elif res != 1:

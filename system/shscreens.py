@@ -8,10 +8,12 @@ import threading
 from collections import deque, namedtuple
 from contextlib import contextmanager
 
-from six.moves import xrange
-
 # noinspection PyPep8Naming
-from .shcommon import Graphics as graphics
+from stash.system.shcommon import Graphics as graphics
+from stash.lib.libslog import slog
+
+_pyfile_ = __file__.split("/")[-1]
+slog(f'pyfile: {_pyfile_}')
 
 
 class ShScreenNotLocked(Exception):
@@ -20,17 +22,16 @@ class ShScreenNotLocked(Exception):
 
 #: A container for a single character, field names are *hopefully*
 #: self-explanatory.
-_Char = namedtuple("_Char",
-                   [
-                       "data",
-                       "fg",
-                       "bg",
-                       "bold",
-                       "italics",
-                       "underscore",
-                       "strikethrough",
-                       "reverse",
-                   ])
+_Char = namedtuple("_Char", [
+    "data",
+    "fg",
+    "bg",
+    "bold",
+    "italics",
+    "underscore",
+    "strikethrough",
+    "reverse",
+])
 
 
 class ShChar(_Char):
@@ -48,19 +49,18 @@ class ShChar(_Char):
     __slots__ = ()
 
     # noinspection PyInitNewSignature
-    def __new__(
-            cls,
-            data,
-            fg="default",
-            bg="default",
-            bold=False,
-            italics=False,
-            underscore=False,
-            reverse=False,
-            strikethrough=False
-    ):
-        return _Char.__new__(cls, data, fg, bg, bold, italics, underscore, strikethrough, reverse)
-    
+    def __new__(cls,
+                data,
+                fg="default",
+                bg="default",
+                bold=False,
+                italics=False,
+                underscore=False,
+                reverse=False,
+                strikethrough=False):
+        return _Char.__new__(cls, data, fg, bg, bold, italics, underscore,
+                             strikethrough, reverse)
+
     @staticmethod
     def same_style(char1, char2):
         """
@@ -179,7 +179,7 @@ class ShSequentialScreen(object):
         :rtype: [ShChar]
         """
         _, rbound = self.get_bounds()
-        return [self._buffer[x] for x in xrange(rbound, len(self._buffer))]
+        return [self._buffer[x] for x in range(rbound, len(self._buffer))]
 
     @property
     def x_modifiable(self):
@@ -190,7 +190,7 @@ class ShSequentialScreen(object):
         """
         # The position is either the x_drawend or last LF location plus one,
         # whichever is larger.
-        for idx in xrange(self.text_length - 1, self.x_drawend - 1, -1):
+        for idx in range(self.text_length - 1, self.x_drawend - 1, -1):
             if self._buffer[idx].data == '\n':
                 return idx + 1
         else:
@@ -211,7 +211,8 @@ class ShSequentialScreen(object):
         A string represents the characters that are in the modifiable range.
         :rtype: str
         """
-        return ''.join(self._buffer[idx].data for idx in xrange(*self.modifiable_range))
+        return ''.join(self._buffer[idx].data
+                       for idx in range(*self.modifiable_range))
 
     @modifiable_string.setter
     def modifiable_string(self, s):
@@ -268,7 +269,11 @@ class ShSequentialScreen(object):
         self.intact_right_bound = len(self._buffer)
 
     # noinspection PyProtectedMember
-    def replace_in_range(self, rng, s, relative_to_x_modifiable=False, set_drawend=False):
+    def replace_in_range(self,
+                         rng,
+                         s,
+                         relative_to_x_modifiable=False,
+                         set_drawend=False):
         """
         Replace the buffer content in the given range. This method should
         ONLY be called from the UI delegation side, i.e. NOT running
@@ -290,7 +295,8 @@ class ShSequentialScreen(object):
             self.intact_right_bound = rng[0]
 
         rotate_n = max(len(self._buffer) - rng[1], 0)
-        self._buffer.rotate(rotate_n)  # rotate buffer first so deletion is possible
+        self._buffer.rotate(
+            rotate_n)  # rotate buffer first so deletion is possible
         try:
             if rng[0] != rng[1]:  # delete chars if necessary
                 self._pop_chars(rng[1] - rng[0])
@@ -436,7 +442,8 @@ class ShSequentialScreen(object):
         Delete n characters from cursor including cursor within the current line.
         :param count: If count is 0, delete till the next newline.
         """
-        if self.cursor_xs == self.text_length or self._buffer[self.cursor_xs] == '\n':
+        if self.cursor_xs == self.text_length or self._buffer[self.
+                                                              cursor_xs] == '\n':
             return
         if count == 0:  # delete till the next newline
             count = self.text_length
@@ -466,7 +473,10 @@ class ShSequentialScreen(object):
                 pass
 
         elif mode == 1:  # erase form beginning of line to cursor, including cursor
-            rng = [self._rfind_nth_nl(default=-1) + 1, min(self.cursor_xs + 1, self.text_length)]
+            rng = [
+                self._rfind_nth_nl(default=-1) + 1, min(
+                    self.cursor_xs + 1, self.text_length)
+            ]
             try:
                 if self._buffer[rng[1] - 1] == '\n':
                     rng[1] -= 1
@@ -474,7 +484,10 @@ class ShSequentialScreen(object):
                 pass
 
         else:  # mode == 2:  # erase the complete line
-            rng = [self._rfind_nth_nl(default=-1) + 1, self._find_nth_nl(default=self.text_length)]
+            rng = [
+                self._rfind_nth_nl(default=-1) + 1, self._find_nth_nl(
+                    default=self.text_length)
+            ]
 
         # fast fail when there is nothing to erase
         if rng[0] >= rng[1]:
@@ -530,9 +543,11 @@ class ShSequentialScreen(object):
                     break
                 line_count += 1
 
-            nchars_pyte_screen = (nlines - line_count - 1) * (ncolumns + 1) + column_count
+            nchars_pyte_screen = (nlines - line_count - 1) * (
+                ncolumns + 1) + column_count
 
-            idx_cursor_pyte_screen = pyte_screen.cursor.x + pyte_screen.cursor.y * (ncolumns + 1)
+            idx_cursor_pyte_screen = pyte_screen.cursor.x + pyte_screen.cursor.y * (
+                ncolumns + 1)
 
             if nchars_pyte_screen < idx_cursor_pyte_screen:
                 nchars_pyte_screen = idx_cursor_pyte_screen
@@ -553,12 +568,14 @@ class ShSequentialScreen(object):
             if idx_dirty_char > self.text_length - 1:
                 self.intact_right_bound = self.text_length
             else:
-                self.intact_right_bound = min(self.text_length, nchars_pyte_screen)
+                self.intact_right_bound = min(self.text_length,
+                                              nchars_pyte_screen)
                 for idx in xrange(idx_dirty_char, nchars_pyte_screen):
                     # self.logger.info('idx = %s' % idx)
                     if idx >= self.text_length:
                         break
-                    idx_line, idx_column = idx / (ncolumns + 1), idx % (ncolumns + 1)
+                    idx_line, idx_column = idx / (ncolumns + 1), idx % (
+                        ncolumns + 1)
                     if idx_column == ncolumns:
                         continue
                     pyte_char = pyte_screen.buffer[idx_line][idx_column]
@@ -573,7 +590,8 @@ class ShSequentialScreen(object):
                 self._buffer.pop()
 
             for idx in xrange(self.intact_right_bound, nchars_pyte_screen):
-                idx_line, idx_column = idx / (ncolumns + 1), idx % (ncolumns + 1)
+                idx_line, idx_column = idx / (ncolumns + 1), idx % (
+                    ncolumns + 1)
                 if idx_column != ncolumns:
                     c = pyte_screen.buffer[idx_line][idx_column]
                     self._buffer.append(ShChar(**c._asdict()))
@@ -586,4 +604,3 @@ class ShSequentialScreen(object):
         # self.logger.info('|%s|' % pyte_screen.display)
         # self.logger.info('text=|%s|' % self.text)
         # self.logger.info('text_length=%s' % self.text_length)
-

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-class ObjCClass(object):
+class ObjCClass:
     def __init__(self, *args, **kwargs):
         pass
 

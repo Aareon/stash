@@ -79,8 +79,6 @@ Options:
     $Rev: $
     $Author: $
 """
-from __future__ import print_function
-
 import os
 import select
 import socket
@@ -88,8 +86,6 @@ import struct
 import sys
 import time
 import argparse
-
-from six.moves import xrange
 
 # On Windows, the best timer is time.clock()
 # On most other platforms the best timer is time.time()
@@ -115,16 +111,16 @@ def checksum(source_string):
         if not isinstance(v2, int):
             v2 = ord(v2)
         thisVal = v1 * 256 + v2
-        sum = sum + thisVal
+        sum += thisVal
         sum = sum & 0xffffffff  # Necessary?
-        count = count + 2
+        count += 2
 
     if countTo < len(source_string):
-        sum = sum + ord(source_string[len(source_string) - 1])
+        sum += ord(source_string[len(source_string) - 1])
         sum = sum & 0xffffffff  # Necessary?
 
     sum = (sum >> 16) + (sum & 0xffff)
-    sum = sum + (sum >> 16)
+    sum += (sum >> 16)
     answer = ~sum
     answer = answer & 0xffff
 
@@ -135,8 +131,7 @@ def checksum(source_string):
 
 
 def receive_one_ping(my_socket, ID, timeout):
-    """
-    receive the ping from the socket.
+    """ receive the ping from the socket.
     """
     timeLeft = timeout
     while True:

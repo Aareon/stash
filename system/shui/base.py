@@ -13,7 +13,7 @@ from ..shcommon import K_CC, K_CD, K_HUP, K_HDN, K_LEFT, K_RIGHT, K_CU, K_TAB, K
 class ShBaseUI(object):
     """
     Baseclass for the UI.
-    :param stash: assoziated StaSh instance
+    :param stash: associated StaSh instance
     :type stash : StaSh
     :param debug: debug flaf
     :type debug: bool
@@ -83,7 +83,7 @@ class ShBaseUI(object):
         self.stash.mini_buffer.delete_word(self.selected_range)
 
     def controlLAction(self):  # delete one word backwards
-        self.stash.stream.feed(u'\u009bc%s' % self.stash.runtime.get_prompt(), no_wait=True)
+        self.stash.stream.feed(f'\u009bc{self.stash.runtime.get_prompt()}', no_wait=True)
 
     def controlZAction(self):
         self.stash.runtime.push_to_background()

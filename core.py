@@ -4,8 +4,7 @@ StaSh - Pythonista Shell
 
 https://github.com/ywangd/stash
 """
-
-__version__ = '0.7.5'
+__version__ = '0.8.0'
 
 import imp as pyimp  # rename to avoid name conflict with objc_util
 import logging
@@ -13,26 +12,32 @@ import logging.handlers
 import os
 import platform
 import sys
-from io import IOBase
+from io import IOBase, BytesIO, StringIO
+from configparser import ConfigParser
 
-import six
-from six import BytesIO, StringIO
-from six.moves.configparser import ConfigParser
+from stash.lib.libcore import PY3
+from stash.lib.libslog import slog
+
+_pyfile_ = __file__.split("/")[-1]
+slog(f'_pyfile_: {_pyfile_}')
 
 # noinspection PyPep8Naming
-from .system.shcommon import (_EXTERNAL_DIRS, _STASH_CONFIG_FILES, _STASH_ROOT, _SYS_STDOUT, IN_PYTHONISTA, ON_IPAD)
-from .system.shcommon import Control as ctrl
-from .system.shcommon import Escape as esc
-from .system.shcommon import Graphics as graphics
-from .system.shio import ShIO
-from .system.shiowrapper import disable as disable_io_wrapper
-from .system.shiowrapper import enable as enable_io_wrapper
-from .system.shparsers import ShCompleter, ShExpander, ShParser
-from .system.shruntime import ShRuntime
-from .system.shscreens import ShSequentialScreen
-from .system.shstreams import ShMiniBuffer, ShStream
-from .system.shui import get_ui_implementation
-from .system.shuseractionproxy import ShUserActionProxy
+from stash.system.shcommon import (
+    _EXTERNAL_DIRS, _STASH_CONFIG_FILES, _STASH_ROOT, _SYS_STDOUT, IN_PYTHONISTA, ON_IPAD,)
+from stash.system.shcommon import (
+    Control as ctrl,
+    Escape as esc,
+    Graphics as graphics,)
+from stash.system.shio import ShIO
+from stash.system.shiowrapper import (
+    disable as disable_io_wrapper,
+    enable as enable_io_wrapper,)
+from stash.system.shparsers import ShCompleter, ShExpander, ShParser
+from stash.system.shruntime import ShRuntime
+from stash.system.shscreens import ShSequentialScreen
+from stash.system.shstreams import ShMiniBuffer, ShStream
+from stash.system.shui import get_ui_implementation
+from stash.system.shuseractionproxy import ShUserActionProxy
 
 # Setup logging
 LOGGER = logging.getLogger('StaSh')
@@ -52,7 +57,7 @@ _DEBUG_EXPANDER = 402
 _DEBUG_COMPLETER = 403
 
 # Default configuration (can be overridden by external configuration file)
-_DEFAULT_CONFIG = """[system]
+_DEFAULT_CONFIG = f'''[system]
 rcfile=.stashrc
 py_traceback=0
 py_pdb=0
@@ -60,7 +65,7 @@ input_encoding_utf8=1
 thread_type=ctypes
 
 [display]
-TEXT_FONT_SIZE={font_size}
+TEXT_FONT_SIZE={14 if ON_IPAD else 12}
 BUTTON_FONT_SIZE=14
 BACKGROUND_COLOR=(0.0, 0.0, 0.0)
 TEXT_COLOR=(1.0, 1.0, 1.0)
@@ -79,12 +84,10 @@ ipython_style_history_search=1
 allow_double_lines=0
 hide_whitespace_lines=1
 maxsize=50
-""".format(
-    font_size=(14 if ON_IPAD else 12),
-)
+'''
 
 # create directories outside STASH_ROOT
-# we should do this each time StaSh because some commands may require
+# we should do this each launch because some commands may require
 # this directories
 for p in _EXTERNAL_DIRS:
     if not os.path.exists(p):
@@ -94,16 +97,24 @@ for p in _EXTERNAL_DIRS:
             pass
 
 
-class StaSh(object):
+class StaSh:
     """
     Main application class. It initialize and wires the components and provide
     utility interfaces to running scripts.
     """
 
-    PY3 = six.PY3
+    PY3 = PY3
 
-    def __init__(self, debug=(), log_setting=None, no_cfgfile=False, no_rcfile=False, no_historyfile=False, command=None):
+    def __init__(self,
+                 debug=(),
+                 documents_dir=None,
+                 log_setting=None,
+                 no_cfgfile=False,
+                 no_rcfile=False,
+                 no_historyfile=False,
+                 command=None):
         self.__version__ = __version__
+        self.documents_dir = documents_dir
 
         # Intercept IO
         enable_io_wrapper()
@@ -120,25 +131,37 @@ class StaSh(object):
         # Wire the components
         self.main_screen = ShSequentialScreen(
             self,
-            nlines_max=self.config.getint('display',
-                                          'BUFFER_MAX'),
-            debug=_DEBUG_MAIN_SCREEN in debug
-        )
+            nlines_max=self.config.getint('display', 'BUFFER_MAX'),
+            debug=_DEBUG_MAIN_SCREEN in debug)
 
-        self.mini_buffer = ShMiniBuffer(self, self.main_screen, debug=_DEBUG_MINI_BUFFER in debug)
+        self.mini_buffer = ShMiniBuffer(
+            self, self.main_screen, debug=_DEBUG_MINI_BUFFER in debug)
 
-        self.stream = ShStream(self, self.main_screen, debug=_DEBUG_STREAM in debug)
+        self.stream = ShStream(
+            self, self.main_screen, debug=_DEBUG_STREAM in debug)
 
         self.io = ShIO(self, debug=_DEBUG_IO in debug)
 
         ShUI, ShSequentialRenderer = get_ui_implementation()
         self.terminal = None  # will be set during UI initialisation
-        self.ui = ShUI(self, debug=(_DEBUG_UI in debug), debug_terminal=(_DEBUG_TERMINAL in debug))
-        self.renderer = ShSequentialRenderer(self, self.main_screen, self.terminal, debug=_DEBUG_RENDERER in debug)
+        self.ui = ShUI(
+            self,
+            debug=(_DEBUG_UI in debug),
+            debug_terminal=(_DEBUG_TERMINAL in debug))
+        self.renderer = ShSequentialRenderer(
+            self,
+            self.main_screen,
+            self.terminal,
+            debug=_DEBUG_RENDERER in debug)
 
         parser = ShParser(debug=_DEBUG_PARSER in debug)
         expander = ShExpander(self, debug=_DEBUG_EXPANDER in debug)
-        self.runtime = ShRuntime(self, parser, expander, no_historyfile=no_historyfile, debug=_DEBUG_RUNTIME in debug)
+        self.runtime = ShRuntime(
+            self,
+            parser,
+            expander,
+            no_historyfile=no_historyfile,
+            debug=_DEBUG_RUNTIME in debug)
         self.completer = ShCompleter(self, debug=_DEBUG_COMPLETER in debug)
 
         # Navigate to the startup folder
@@ -147,36 +170,24 @@ class StaSh(object):
         self.runtime.load_rcfile(no_rcfile=no_rcfile)
         self.io.write(
             self.text_style(
-                'StaSh v%s on python %s\n' % (
-                    self.__version__,
-                    platform.python_version(),
-                ),
-                {
-                    'color': 'blue',
-                    'traits': ['bold']
-                },
-                always=True,
-            ),
-        )
+                'StaSh v%s on python %s\n' % (self.__version__,
+                                              platform.python_version(), ),
+                {'color': 'blue',
+                 'traits': ['bold']},
+                always=True, ), )
         # warn on py3
-        if self.PY3:
+        if not self.PY3:
             self.io.write(
                 self.text_style(
-                    'Warning: you are running StaSh in python3. Some commands may not work correctly in python3.\n',
+                    'Warning: you are running StaSh in python2. Some commands may not work correctly in python2.\n',
                     {'color': 'red'},
-                    always=True,
-                ),
-            )
+                    always=True, ), )
             self.io.write(
                 self.text_style(
                     'Please help us improving StaSh by reporting bugs on github.\n',
-                    {
-                        'color': 'yellow',
-                        'traits': ['italic']
-                    },
-                    always=True,
-                ),
-            )
+                    {'color': 'yellow',
+                     'traits': ['italic']},
+                    always=True, ), )
         # Load shared libraries
         self._load_lib()
 
@@ -193,7 +204,8 @@ class StaSh(object):
     def __call__(self, input_, persistent_level=2, *args, **kwargs):
         """ This function is to be called by external script for
          executing shell commands """
-        worker = self.runtime.run(input_, persistent_level=persistent_level, *args, **kwargs)
+        worker = self.runtime.run(
+            input_, persistent_level=persistent_level, *args, **kwargs)
         worker.join()
         return worker
 
@@ -203,14 +215,15 @@ class StaSh(object):
         config.optionxform = str  # make it preserve case
 
         # defaults
-        if not six.PY3:
+        if not PY3:
             config.readfp(BytesIO(_DEFAULT_CONFIG))
         else:
             config.read_file(StringIO(_DEFAULT_CONFIG))
 
         # update from config file
         if not no_cfgfile:
-            config.read(os.path.join(_STASH_ROOT, f) for f in _STASH_CONFIG_FILES)
+            config.read(
+                os.path.join(_STASH_ROOT, f) for f in _STASH_CONFIG_FILES)
 
         return config
 
@@ -233,8 +246,7 @@ class StaSh(object):
             'INFO': logging.INFO,
             'DEBUG': logging.DEBUG,
             'NOTEST': logging.NOTSET,
-        }.get(_log_setting['level'],
-              logging.DEBUG)
+        }.get(_log_setting['level'], logging.DEBUG)
 
         logger.setLevel(level)
 
@@ -242,13 +254,13 @@ class StaSh(object):
             if _log_setting['stdout']:
                 _log_handler = logging.StreamHandler(_SYS_STDOUT)
             else:
-                _log_handler = logging.handlers.RotatingFileHandler('stash.log', mode='w')
+                _log_handler = logging.handlers.RotatingFileHandler(
+                    'stash.log', mode='w')
             _log_handler.setLevel(level)
             _log_handler.setFormatter(
                 logging.Formatter(
                     '[%(asctime)s] [%(levelname)s] [%(threadName)s] [%(name)s] [%(funcName)s] [%(lineno)d] - %(message)s'
-                )
-            )
+                ))
             logger.addHandler(_log_handler)
 
         return logger
@@ -262,14 +274,19 @@ class StaSh(object):
         try:
             for f in os.listdir(lib_path):
                 fp = os.path.join(lib_path, f)
-                if f.startswith('lib') and f.endswith('.py') and os.path.isfile(fp):
+                if f.startswith('lib') and f.endswith(
+                        '.py') and os.path.isfile(fp):
                     name, _ = os.path.splitext(f)
                     if self.runtime.debug:
-                        self.logger.debug("Attempting to load library '{}'...".format(name))
+                        self.logger.debug(
+                            "Attempting to load library '{}'...".format(name))
                     try:
                         self.__dict__[name] = pyimp.load_source(name, fp)
                     except Exception as e:
-                        self.write_message('%s: failed to load library file (%s)' % (f, repr(e)), error=True)
+                        self.write_message(
+                            '%s: failed to load library file (%s)' % (f,
+                                                                      repr(e)),
+                            error=True)
         finally:  # do not modify environ permanently
             os.environ.pop('STASH_ROOT')
 
@@ -298,7 +315,7 @@ class StaSh(object):
         """
         self.ui.show()
         # self.terminal.set_focus()
-    
+
     def close(self):
         """
         Quit StaSh.
@@ -306,7 +323,7 @@ class StaSh(object):
         which in turn will call self.on_exit().
         """
         self.ui.close()
-    
+
     def on_exit(self):
         """
         This method will be called when StaSh is about the be closed.
@@ -315,7 +332,6 @@ class StaSh(object):
         self.cleanup()
         # Clear the stack or the stdout becomes unusable for interactive prompt
         self.runtime.worker_registry.purge()
-        
 
     def cleanup(self):
         """
@@ -343,13 +359,16 @@ class StaSh(object):
         :return:
         """
         # No color for pipes, files and Pythonista console
-        if not self.enable_styles or (not always and (isinstance(sys.stdout,
-                                                                 (StringIO,
-                                                                  IOBase))  # or sys.stdout.write.im_self is _SYS_STDOUT
-                                                      or sys.stdout is _SYS_STDOUT)):
+        if not self.enable_styles or (
+                not always and
+            (isinstance(sys.stdout,
+                        (StringIO,
+                         IOBase))  # or sys.stdout.write.im_self is _SYS_STDOUT
+             or sys.stdout is _SYS_STDOUT)):
             return s
 
-        fmt_string = u'%s%%d%s%%s%s%%d%s' % (ctrl.CSI, esc.SGR, ctrl.CSI, esc.SGR)
+        fmt_string = u'%s%%d%s%%s%s%%d%s' % (ctrl.CSI, esc.SGR, ctrl.CSI,
+                                             esc.SGR)
         for style_name, style_value in style.items():
             if style_name == 'color':
                 color_id = graphics._SGR.get(style_value.lower())
@@ -363,13 +382,17 @@ class StaSh(object):
                 for val in style_value:
                     val = val.lower()
                     if val == 'bold':
-                        s = fmt_string % (graphics._SGR['+bold'], s, graphics._SGR['-bold'])
+                        s = fmt_string % (graphics._SGR['+bold'], s,
+                                          graphics._SGR['-bold'])
                     elif val == 'italic':
-                        s = fmt_string % (graphics._SGR['+italics'], s, graphics._SGR['-italics'])
+                        s = fmt_string % (graphics._SGR['+italics'], s,
+                                          graphics._SGR['-italics'])
                     elif val == 'underline':
-                        s = fmt_string % (graphics._SGR['+underscore'], s, graphics._SGR['-underscore'])
+                        s = fmt_string % (graphics._SGR['+underscore'], s,
+                                          graphics._SGR['-underscore'])
                     elif val == 'strikethrough':
-                        s = fmt_string % (graphics._SGR['+strikethrough'], s, graphics._SGR['-strikethrough'])
+                        s = fmt_string % (graphics._SGR['+strikethrough'], s,
+                                          graphics._SGR['-strikethrough'])
 
         return s
 

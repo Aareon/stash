@@ -3,8 +3,14 @@ import logging
 import time
 from collections import deque
 
+from stash.lib.libslog import slog
+from stash.system.shcommon import PY3
 
-class ShIO(object):
+_pyfile_ = __file__.split("/")[-1]
+slog(f'pyfile: {_pyfile_}')
+
+
+class ShIO:
     """
     The ShIO object is the read/write interface to users and running scripts.
     It acts as a staging area so that the UI Delegate calls can return without
@@ -12,10 +18,9 @@ class ShIO(object):
     """
 
     def __init__(self, stash, debug=False):
-
         self.stash = stash
         self.debug = debug
-        self.logger = logging.getLogger('StaSh.IO')
+        self.logger = logging.getLogger('StaSH.IO')
         self.tell_pos = 0
         # The input buffer, push from the Left end, read from the right end
         self._buffer = deque()
@@ -58,9 +63,10 @@ class ShIO(object):
 
     def truncate(self, size=None):
         """do nothing"""
+        pass
 
     def read(self, size=-1):
-        size = size if size != 0 else 1
+        size = size or 1
 
         if size == -1:
             return ''.join(self._buffer.pop() for _ in len(self._buffer))
@@ -161,7 +167,9 @@ class ShIO(object):
             return
         idx = 0
         while True:
-            self.stash.stream.feed(s[idx:idx + self.chunk_size], no_wait=no_wait)  # main screen only
+            self.stash.stream.feed(
+                s[idx:idx + self.chunk_size],
+                no_wait=no_wait)  # main screen only
             idx += self.chunk_size
             if idx >= len(s):
                 break

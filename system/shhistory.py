@@ -1,11 +1,13 @@
 #-*- coding: utf-8 -*-
+""" StaSh input history
 """
-StaSh input history
-"""
-from io import open
 import json
 
-from .shcommon import ShEventNotFound
+from stash.lib.libslog import slog
+_pyfile_ = __file__.split("/")[-1]
+slog(f'pyfile: {_pyfile_}')
+
+from stash.system.shcommon import ShEventNotFound
 
 
 class ShHistory(object):
@@ -22,9 +24,12 @@ class ShHistory(object):
         self.stash = stash
         self._histories = {}
         self._current = self.DEFAULT
-        self.allow_double = self.stash.config.getboolean("history", "allow_double_lines")
-        self.hide_whitespace = self.stash.config.getboolean("history", "hide_whitespace_lines")
-        self.ipython_style_history_search = self.stash.config.getboolean('history', 'ipython_style_history_search')
+        self.allow_double = self.stash.config.getboolean(
+            "history", "allow_double_lines")
+        self.hide_whitespace = self.stash.config.getboolean(
+            "history", "hide_whitespace_lines")
+        self.ipython_style_history_search = self.stash.config.getboolean(
+            'history', 'ipython_style_history_search')
         self.maxsize = self.stash.config.getint("history", "maxsize")
         self.templine = ""
         self.idx = -1
@@ -108,7 +113,8 @@ class ShHistory(object):
         if self._current not in self._histories:
             self._histories[self._current] = []
         stripped = line.strip()
-        last_line = (self._histories[self._current][-1] if len(self._histories[self._current]) > 0 else None)
+        last_line = (self._histories[self._current][-1]
+                     if len(self._histories[self._current]) > 0 else None)
         if not always:
             # check if this line should be added
             if stripped == last_line and not self.allow_double:
@@ -195,7 +201,7 @@ class ShHistory(object):
 
     def down(self):
         """
-        Move downwqrds in the history
+        Move downwards in the history
         """
         history = self.getlist()
         self.idx -= 1
