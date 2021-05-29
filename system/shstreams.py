@@ -383,7 +383,7 @@ class ShStream(object):
         :param str chars: a string to feed from.
         """
         # To avoid the \xc2 deadlock from bytes string
-        if not isinstance(chars, six.text_type):
+        if not isinstance(chars, str):
             chars = chars.decode('utf-8', errors='ignore')
 
         with self.main_screen.acquire_lock():
