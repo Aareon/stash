@@ -324,7 +324,7 @@ class ShSequentialScreen(object):
         :param n:
         :return:
         """
-        for _ in xrange(n):
+        for _ in range(n):
             self._buffer.pop()
         if self.text_length < self.intact_right_bound:
             self.intact_right_bound = self.text_length
@@ -334,9 +334,9 @@ class ShSequentialScreen(object):
         Keep number of lines under control
         """
         char_count = line_count = 0
-        for _ in xrange(self.nlines_max, self.nlines):
+        for _ in range(self.nlines_max, self.nlines):
             # Remove the top line
-            for idx in xrange(self.text_length):
+            for idx in range(self.text_length):
                 char_count += 1
                 if self._buffer.popleft().data == '\n':
                     line_count += 1
@@ -355,7 +355,7 @@ class ShSequentialScreen(object):
     def _rfind_nth_nl(self, from_x=None, n=1, default=None):
         if from_x is None:
             from_x = self.cursor_xs
-        for idx in xrange(from_x, -1, -1):
+        for idx in range(from_x, -1, -1):
             try:  # try for when from_x is equal to buffer length (i.e. at the end of the buffer)
                 if self._buffer[idx].data == '\n':
                     n -= 1
@@ -369,7 +369,7 @@ class ShSequentialScreen(object):
     def _find_nth_nl(self, from_x=None, n=1, default=None):
         if from_x is None:
             from_x = self.cursor_xs
-        for idx in xrange(from_x, self.text_length):
+        for idx in range(from_x, self.text_length):
             try:
                 if self._buffer[idx].data == '\n':
                     n -= 1
@@ -448,7 +448,7 @@ class ShSequentialScreen(object):
         if count == 0:  # delete till the next newline
             count = self.text_length
         with self.buffer_rotate(-self.cursor_xs):
-            for _ in xrange(min(count, self.text_length - self.cursor_xs)):
+            for _ in range(min(count, self.text_length - self.cursor_xs)):
                 c = self._buffer.popleft()
                 if c.data == '\n':  # do not delete newline
                     self._buffer.appendleft(c)
@@ -495,7 +495,7 @@ class ShSequentialScreen(object):
 
         # Erase characters in the range
         with self.buffer_rotate(self.text_length - rng[1]):
-            for _ in xrange(*rng):
+            for _ in range(*rng):
                 self._buffer.pop()
             self._buffer.extend(take(rng[1] - rng[0], DEFAULT_LINE))
             self.x_drawend = rng[0]
@@ -570,7 +570,7 @@ class ShSequentialScreen(object):
             else:
                 self.intact_right_bound = min(self.text_length,
                                               nchars_pyte_screen)
-                for idx in xrange(idx_dirty_char, nchars_pyte_screen):
+                for idx in range(idx_dirty_char, nchars_pyte_screen):
                     # self.logger.info('idx = %s' % idx)
                     if idx >= self.text_length:
                         break
@@ -586,10 +586,10 @@ class ShSequentialScreen(object):
                         self.intact_right_bound = idx
                         break
 
-            for _ in xrange(self.intact_right_bound, self.text_length):
+            for _ in range(self.intact_right_bound, self.text_length):
                 self._buffer.pop()
 
-            for idx in xrange(self.intact_right_bound, nchars_pyte_screen):
+            for idx in range(self.intact_right_bound, nchars_pyte_screen):
                 idx_line, idx_column = idx / (ncolumns + 1), idx % (
                     ncolumns + 1)
                 if idx_column != ncolumns:
