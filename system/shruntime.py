@@ -444,7 +444,8 @@ class ShRuntime(object):
 
             if prev_outs:
                 # If previous output has gone to a file, we use a dummy empty string as ins
-                ins = StringIO() if type(prev_outs) == file else prev_outs
+                ins = prev_outs if not isinstance(prev_outs, StringIO) else StringIO()
+
             else:
                 ins = final_ins or current_state.sys_stdin__
 
@@ -537,7 +538,7 @@ class ShRuntime(object):
                 break  # break out of the pipe_sequence, but NOT pipe_sequence list
 
             finally:
-                if isinstance(outs, file) and not isinstance(outs, StringIO):
+                if isinstance(outs, IOBase) and not isinstance(outs, StringIO):
                     # StringIO is subclass of IOBase in py3 but not in py2
                     outs.close()
                 if isinstance(ins, StringIO):  # release the string buffer
