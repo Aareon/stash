@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import fileinput
+import sys
 
-try:
-    unicode
-except NameError:
-    unicode = str
+PY3 = sys.version_info.major == 3
 
 
 def collapseuser(path):
