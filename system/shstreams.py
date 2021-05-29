@@ -126,7 +126,7 @@ class ShMiniBuffer(object):
                     elif len(possibilities) > 0:  # TODO: handle max possibilities checking
                         # Run through stream feed to allow attributed texts to be processed
                         self.stash.stream.feed(
-                            u'\n%s\n%s' % ('  '.join(possibilities),
+                            '\n%s\n%s' % ('  '.join(possibilities),
                                            self.stash.runtime.get_prompt()),
                             render_it=False  # do not render to avoid dead lock on UI thread
                         )
@@ -141,7 +141,7 @@ class ShMiniBuffer(object):
 
                 except Exception as e:  # TODO: better error handling
                     self.stash.stream.feed(
-                        u'\nauto-completion error: %s\n%s' % (repr(e),
+                        '\nauto-completion error: %s\n%s' % (repr(e),
                                                               self.stash.runtime.get_prompt()),
                         render_it=False
                     )
@@ -172,7 +172,7 @@ class ShMiniBuffer(object):
                                 rpln[:-1],
                                 relative_to_x_modifiable=True
                             )
-                        self.main_screen.replace_in_range(None, u'\n', relative_to_x_modifiable=False)
+                        self.main_screen.replace_in_range(None, '\n', relative_to_x_modifiable=False)
                         self.chars = self.chars[:x] + rpln[:-1] + self.chars[x:] + '\n'
                     else:
                         # Do not send NULL char to main screen, it crashes the app
@@ -282,7 +282,7 @@ class ShMiniBuffer(object):
         modifiable_string = self.modifiable_string
         lm = len(modifiable_string)
         if lm == 0:
-            trailing = u""
+            trailing = ""
         else:
             trailing = tv_text[-lm:]
         if self.debug:
