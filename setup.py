@@ -23,7 +23,7 @@ if IN_PYTHONISTA:
         v = None
     if v == 1:
         # pythonista install
-        cmd = "import requests as r; exec(r.get('https://bit.ly/get-stash').text)"
+        cmd = "import requests as r; exec(r.get('https://tinyurl.com/get-stash-for-3').text)"
         print('Executing: "' + cmd + '"') 
         exec(cmd)
         sys.exit(0)
@@ -108,8 +108,8 @@ setup(
     name="StaSh",
     version=get_stash_version(CORE_PATH),
     description="StaSh for PC",
-    author="https://github.com/ywangd and various contributors",
-    url="https://github.com/ywangd/stash/",
+    author="https://github.com/Aareon, https://github.com/ywangd, and various contributors",
+    url="https://github.com/Aareon/stash/",
     packages=[
         "stash",
         "stash.system",
