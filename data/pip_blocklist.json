@@ -24,6 +24,7 @@
     "futures": ["bugged", true, null],
     "regex": ["C", true, null],
     "gevent": ["C", true, null],
-    "grequests": ["incompatible_dependency", true, null]
+    "grequests": ["incompatible_dependency", true, null],
+    "pytest-mypy": ["incompatible_dependency", true, null]
 }
 }
