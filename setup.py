@@ -6,25 +6,36 @@ import ast
 import os
 import sys
 
-
 # =================== check if run inside pythonista ===================
-IN_PYTHONISTA = sys.executable.find('Pythonista') >= 0
+IN_PYTHONISTA = 'Pythonista' in sys.executable
 
 if IN_PYTHONISTA:
-    print("It appears that you are running this file using the pythonista app.")
-    print("The setup.py file is intended for the installation on a PC.")
-    print("Please choose one of the following options:")
-    print("[1] run pythonista-specific installer")
-    print("[2] continue with setup")
-    print("[3] abort")
+    import console
+
+    print(
+        """It appears that you are running this file using the Pythonista app. setup.py is intended for installation on PC.
+
+    \rPlease choose one of the following options:""")
+   
+    console.set_color(0,150,0)
+    print("[1] Run Pythonista installer")
+    
+    console.set_color(150, 150, 0)
+    print("[2] Continue with setup")
+    
+    console.set_color(255, 0,0)
+    print("[3] Abort")
+    console.set_color(255,255,255)
+    
     try:
-        v = int(input(">"))
+        v = int(input(">> "))
     except Exception:
         v = None
+    
     if v == 1:
         # pythonista install
         cmd = "import requests as r; exec(r.get('https://tinyurl.com/get-stash-for-3').text)"
-        print('Executing: "' + cmd + '"') 
+        print('Executing: "' + cmd + '"')
         exec(cmd)
         sys.exit(0)
     elif v == 2:
@@ -37,12 +48,10 @@ if IN_PYTHONISTA:
         print("Aborting...")
         sys.exit(1)
 
-
 # =================== SETUP ===================
 
 from distutils.core import setup
 from setuptools import find_packages
-
 
 TEST_REQUIREMENTS = [
     "pyparsing==2.0.1",
@@ -52,11 +61,12 @@ TEST_REQUIREMENTS = [
     "requests==2.9.1",
 ]
 
-
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STASH_DIR = os.path.dirname(os.path.abspath(__file__))
 CORE_PATH = os.path.join(STASH_DIR, "core.py")
-TO_IGNORE = [os.path.abspath(os.path.join(STASH_DIR, p)) for p in ("build", "dist")]
+TO_IGNORE = [
+    os.path.abspath(os.path.join(STASH_DIR, p)) for p in ("build", "dist")
+]
 
 
 def get_package_data_files(directory, exclude=[]):
@@ -93,9 +103,9 @@ def get_stash_version(corepath):
     """
     with open(corepath, "r") as fin:
         for line in fin:
-             if line.startswith("__version__"):
-                 version = ast.literal_eval(line.split("=")[1].strip())
-                 return version
+            if line.startswith("__version__"):
+                version = ast.literal_eval(line.split("=")[1].strip())
+                return version
     raise Exception("Could not find StaSh version in file '{f}'", f=corepath)
 
 
@@ -103,12 +113,12 @@ def get_stash_version(corepath):
 os.chdir(STASH_DIR)
 print(STASH_DIR)
 
-
 setup(
     name="StaSh",
     version=get_stash_version(CORE_PATH),
     description="StaSh for PC",
-    author="https://github.com/Aareon, https://github.com/ywangd, and various contributors",
+    author=
+    "https://github.com/Aareon, https://github.com/ywangd, and various contributors",
     url="https://github.com/Aareon/stash/",
     packages=[
         "stash",
@@ -126,12 +136,11 @@ setup(
     scripts=[os.path.join(STASH_DIR, "launch_stash.py")],
     zip_safe=False,
     install_requires=[
-        "six",      # required by StaSh
+        "six",  # required by StaSh
         "pyperclip",  # required by libdist for copy/paste on PC
         "requests",
         "pyte",
     ],
     extras_require={
         "testing": TEST_REQUIREMENTS,
-    },
-)
+    }, )
